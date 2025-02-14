@@ -1,0 +1,128 @@
+import requests
+import pandas as pd
+from time import sleep
+
+category = 'concreting'
+pages = 4
+
+for page in range(1, pages):
+  query = """
+  query businessListing($state: String, $categorySlug: String!, $suburb: String, $page: Int, $perPage: Int, $maxWordCount: Int) {
+    businessListing(
+      state: $state
+      categorySlug: $categorySlug
+      suburb: $suburb
+      page: $page
+      perPage: $perPage
+      maxWordCount: $maxWordCount
+    ) {
+      pagesCount
+      businesses {
+        id
+        name
+        abn
+        avatar
+        awardsCount
+        cachedSlug
+        certificateVerified
+        description
+        distance
+        featuredListing
+        featuredListingEnhanced
+        featuredTile
+        feedbackAvg
+        feedbackCount
+        hiredCount
+        heroImageId
+        heroImageFileName
+        insuranceVerified
+        newToOneflare
+        landline
+        onTimeGuarantee
+        phone
+        profileLink
+        cachedSlug
+        isFullDescription
+        showLandlineOverUserMobile
+        servicingZoneNames
+        seoDescription
+        showPhoneInDirectory
+        showLandlineInDirectory
+        state
+        suburb
+        topFeedbackDate
+        topFeedbackFirstNamePossessive
+        topFeedbackId
+        topFeedbackName
+        topFeedbackJobName
+        topFeedbackLocationName
+        topFeedbackReview
+        topFeedbackUuid
+        external
+        website
+        available247
+        openPublicHolidays
+        observedPublicHoliday
+        openNow
+        openStatus
+        openingHours {
+          openStatus
+          formattedOpenHours
+          day
+          __typename
+        }
+        socialMediaLinks {
+          platform
+          url
+          __typename
+        }
+        awards(groupBy: "name") {
+          id
+          name
+          year
+          __typename
+        }
+        gallery {
+          id
+          filename
+          thumb
+          original
+          __typename
+        }
+        uniqueSellingPoints {
+          content
+          __typename
+        }
+        verified
+        __typename
+      }
+      __typename
+    }
+  }
+  """
+  json_data = {
+      'query': query,
+      'variables': {"categorySlug":category,"maxWordCount":120,"page":page,"perPage":18},
+      'operationName': 'businessListing',
+  }
+  headers = {'content-type': 'application/json', 
+            'referer': 'https://www.oneflare.com.au/{}'.format(category),
+            'x_scope_token': 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE4NTIxNzE5MTYsImp0aSI6ImQ2OTM1M2IxLWY1YjQtNGJjYy1iZDU3LTYzY2U3MWUyMTQxMiIsImlhdCI6MTUzNjgxMTkxNiwiaXNzIjoib25lZmxhcmUuY29tLmF1IiwiYXVkIjpbIkNsaWVudCBTY29wZSJdLCJzY29wZSI6ImRpcmVjdG9yeSJ9.DHluv1OL7Xy6dt_SsrvZM9CVWridLzEeyXsfjBaNxM4'
+            }
+
+  response = requests.get('https://www.oneflare.com.au/api/graphql', json=json_data, headers=headers)
+  businesses = response.json()['data']['businessListing']['businesses']
+
+  df = pd.DataFrame(columns=['Category name','Bussiness Name','Number of jobs completed','Phone number','Website URL','Address'])
+
+  for business in businesses:
+      new_row = {"Category name": category, 
+                "Bussiness Name": business['name'], 
+                "Number of jobs completed": business['hiredCount'], 
+                "Phone number": business['phone'], 
+                "Website URL": business['website'], 
+                "Address": business['suburb'] + ', ' + business['state']}
+      df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+  sleep(5)
+
+df.to_excel('businesses.xlsx')
